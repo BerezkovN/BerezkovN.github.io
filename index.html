@@ -1,0 +1,128 @@
+
+請輸入字符:<p>
+<input type="text" id="hanzi" placeholder="你好" onkeydown="main()">
+<button type="button" id="generateButton">Generate</button>
+
+<div id="hanzi-container" class="scrolling-wrapper-flexbox">
+</div>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<script>
+
+    async function getCharacterStrokeCount(hanziChar) {
+        let unsupportedChar = false
+        const charData = await HanziWriter.loadCharacterData(hanziChar).catch((error) => {
+            unsupportedChar = true
+        });
+        if (unsupportedChar) {
+            return -1
+        }
+        else {
+            return charData.strokes.length;
+        }
+    }
+
+    function createElementFromHTML(htmlString) {
+        var div = document.createElement('div');
+        div.innerHTML = htmlString.trim();
+
+        // Change this to div.childNodes to support multiple top-level nodes.
+        return div.firstChild;
+    }
+
+    async function main() {
+        container = document.getElementById("hanzi-container");
+        container.innerHTML = '';
+        
+
+        hanzi = document.getElementById("hanzi").value;
+
+
+        strokeCounterArray = [];
+        for (let ind = 0; ind < hanzi.length; ind++) {
+
+
+            const strokeCount = await getCharacterStrokeCount(hanzi[ind])
+            if (strokeCount == -1) {
+
+                const padding = document.createElement("div")
+                padding.style.padding = "0px 3px";
+                container.appendChild(padding)
+
+                continue
+            }
+            strokeCounterArray.push(0)
+
+            const hanziDivID = "hanzi-" + ind
+            const hanziDiv = document.createElement("div")
+            container.appendChild(hanziDiv)
+
+            const svgElement = createElementFromHTML(
+`
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" id="${hanziDivID}">
+    <line x1="0" y1="0" x2="200" y2="0" stroke="#DDD" />
+    <line x1="0" y1="0" x2="0" y2="200" stroke="#DDD" />
+    <line x1="0" y1="200" x2="200" y2="200" stroke="#DDD" />
+    <line x1="200" y1="0" x2="200" y2="200" stroke="#DDD" />
+
+    <line x1="0" y1="0" x2="200" y2="200" stroke="#DDD" />
+    <line x1="200" y1="0" x2="0" y2="200" stroke="#DDD" />
+    <line x1="100" y1="0" x2="100" y2="200" stroke="#DDD" />
+    <line x1="0" y1="100" x2="200" y2="100" stroke="#DDD" />
+</svg>
+`
+            )
+            hanziDiv.appendChild(svgElement)            
+
+            const writer = HanziWriter.create(hanziDivID, hanzi[ind], {
+                width: 200,
+                height: 200,
+                showCharacter: false,
+                strokeAnimationSpeed: 4,
+                padding: 5
+            });  
+
+            
+            const strokeCounterInd = ind;
+            const leftButton = document.createElement("button");
+            leftButton.textContent = "Next stroke"
+            leftButton.addEventListener('click', function() {
+
+                if (strokeCounterArray[strokeCounterInd] >= strokeCount) {
+                    writer.hideCharacter()
+                    strokeCounterArray[strokeCounterInd] = 0
+                }
+                else {
+                    writer.animateStroke(strokeCounterArray[strokeCounterInd])
+                    strokeCounterArray[strokeCounterInd]++
+                }
+                
+            });
+            hanziDiv.appendChild(document.createElement("br"))
+            hanziDiv.appendChild(leftButton)       
+        }
+    }
+
+    const generateButton = document.getElementById("generateButton");
+    generateButton.addEventListener('click', function() {
+        main()
+    });	
+
+</script>
+
+
+
+
+<style>
+    .scrolling-wrapper-flexbox {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+
+        .card {
+            flex: 0 0 auto;
+        }
+    }
+</style>
