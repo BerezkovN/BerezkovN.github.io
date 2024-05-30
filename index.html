@@ -6,12 +6,16 @@
 <input type="text" id="hanzi" placeholder="你好" onkeydown="main()">
 <button type="button" id="generateButton">Generate</button>
 
-<div id="hanzi-container" class="scrolling-wrapper-flexbox">
-</div>
+<h1>繁體: </h1>
+<div id="traditional-container" class="scrolling-wrapper-flexbox"></div>
+<h1>简体: </h1>
+<div id="simplified-container" class="scrolling-wrapper-flexbox"></div>
 
 
 
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
+
 <script>
 
     async function getCharacterStrokeCount(hanziChar) {
@@ -35,34 +39,8 @@
         return div.firstChild;
     }
 
-    async function main() {
-        container = document.getElementById("hanzi-container");
-        container.innerHTML = '';
-        
-
-        hanzi = document.getElementById("hanzi").value;
-
-
-        strokeCounterArray = [];
-        for (let ind = 0; ind < hanzi.length; ind++) {
-
-
-            const strokeCount = await getCharacterStrokeCount(hanzi[ind])
-            if (strokeCount == -1) {
-
-                const padding = document.createElement("div")
-                padding.style.padding = "0px 3px";
-                container.appendChild(padding)
-
-                continue
-            }
-            strokeCounterArray.push(0)
-
-            const hanziDivID = "hanzi-" + ind
-            const hanziDiv = document.createElement("div")
-            container.appendChild(hanziDiv)
-
-            const svgElement = createElementFromHTML(
+    function createBackground(hanziDivID) {
+        return createElementFromHTML(
 `
 <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" id="${hanziDivID}">
     <line x1="0" y1="0" x2="200" y2="0" stroke="#DDD" />
@@ -76,10 +54,36 @@
     <line x1="0" y1="100" x2="200" y2="100" stroke="#DDD" />
 </svg>
 `
-            )
-            hanziDiv.appendChild(svgElement)            
+        )
+    }
 
-            const writer = HanziWriter.create(hanziDivID, hanzi[ind], {
+    async function generateHanziRow(containerName, hanziString) {
+
+        container = document.getElementById(containerName);
+        container.innerHTML = '';
+
+        strokeCounterArray = [];
+        for (let ind = 0; ind < hanziString.length; ind++) {
+
+            const strokeCount = await getCharacterStrokeCount(hanziString[ind])
+            if (strokeCount == -1) {
+
+                const padding = document.createElement("div")
+                padding.style.padding = "0px 3px";
+                container.appendChild(padding)
+
+                continue
+            }
+            strokeCounterArray.push(0)
+
+            const hanziDivID = containerName + "hanzi-" + ind
+            const hanziDiv = document.createElement("div")
+            container.appendChild(hanziDiv)
+
+            const backgroundElement = createBackground(hanziDivID)
+            hanziDiv.appendChild(backgroundElement)            
+
+            const writer = HanziWriter.create(hanziDivID, hanziString[ind], {
                 width: 200,
                 height: 200,
                 showCharacter: false,
@@ -106,6 +110,17 @@
             hanziDiv.appendChild(document.createElement("br"))
             hanziDiv.appendChild(leftButton)       
         }
+    }
+
+    async function main() {
+
+        hanzi = document.getElementById("hanzi").value;
+
+        const t2sConverter = OpenCC.Converter({ from: 'tw', to: 'cn' });
+        const s2tConverter = OpenCC.Converter({ from: 'cn', to: 'tw' });
+
+        await generateHanziRow("traditional-container", s2tConverter(hanzi));
+        await generateHanziRow("simplified-container", t2sConverter(hanzi));
     }
 
     const generateButton = document.getElementById("generateButton");
