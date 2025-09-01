@@ -177,20 +177,48 @@ export class PolishModule {
 
         // Polish Explanation
         const polishExplanationEl = document.getElementById('polishExplanation');
-        polishExplanationEl.innerHTML = wordData.polishExplanation || 'No explanation available';
+        if (wordData.polishExplanation) {
+            // Handle multi-line definitions
+            const meanings = wordData.polishExplanation.split('\n');
+            if (meanings.length > 1) {
+                polishExplanationEl.innerHTML = '<ul class="list-disc list-inside space-y-1">' +
+                    meanings.map(meaning => `<li>${meaning}</li>`).join('') +
+                    '</ul>';
+            } else {
+                polishExplanationEl.innerHTML = wordData.polishExplanation;
+            }
+        } else {
+            polishExplanationEl.innerHTML = '<span class="text-secondary">Brak definicji</span>';
+        }
 
         // English Translation
         const englishTranslationEl = document.getElementById('englishTranslation');
-        englishTranslationEl.innerHTML = wordData.englishTranslation || 'No translation available';
+        if (wordData.englishTranslation) {
+            englishTranslationEl.innerHTML = wordData.englishTranslation;
+        } else {
+            // Add pronunciation and etymology if available
+            let additionalInfo = [];
+            if (wordData.pronunciation) {
+                additionalInfo.push(`<div class="mb-2"><strong>Wymowa:</strong> ${wordData.pronunciation}</div>`);
+            }
+            if (wordData.etymology) {
+                additionalInfo.push(`<div><strong>Etymologia:</strong> ${wordData.etymology}</div>`);
+            }
+            if (additionalInfo.length > 0) {
+                englishTranslationEl.innerHTML = additionalInfo.join('');
+            } else {
+                englishTranslationEl.innerHTML = '<span class="text-secondary">Tłumaczenie niedostępne</span>';
+            }
+        }
 
         // Grammar Table
         const grammarTableEl = document.getElementById('grammarTable');
         grammarTableEl.innerHTML = '';
-        if (wordData.grammarTable) {
+        if (wordData.grammarTable && Object.keys(wordData.grammarTable).length > 0) {
             const table = this.renderGrammarTable(wordData.grammarTable);
             grammarTableEl.appendChild(table);
         } else {
-            grammarTableEl.innerHTML = '<p class="text-secondary">No grammar information available</p>';
+            grammarTableEl.innerHTML = '<p class="text-secondary">Brak informacji o odmianie</p>';
         }
 
         // Examples
@@ -201,19 +229,22 @@ export class PolishModule {
                 const exampleDiv = document.createElement('div');
                 exampleDiv.className = 'border-l-4 border-blue-500 pl-4 py-2';
                 
-                if (typeof example === 'object' && example.polish && example.english) {
+                if (typeof example === 'object' && example.polish) {
+                    const polishText = example.polish;
+                    const englishText = example.english || '';
+                    
                     exampleDiv.innerHTML = `
-                        <p class="text-primary mb-1">${example.polish}</p>
-                        <p class="text-secondary text-sm italic">${example.english}</p>
+                        <p class="text-primary mb-1">${polishText}</p>
+                        ${englishText ? `<p class="text-secondary text-sm italic">${englishText}</p>` : ''}
                     `;
-                } else {
+                } else if (typeof example === 'string') {
                     exampleDiv.innerHTML = `<p class="text-primary">${example}</p>`;
                 }
                 
                 examplesListEl.appendChild(exampleDiv);
             });
         } else {
-            examplesListEl.innerHTML = '<p class="text-secondary">No examples available</p>';
+            examplesListEl.innerHTML = '<p class="text-secondary">Brak przykładów</p>';
         }
 
         this.wordDetailsContainer.classList.remove('hidden');
@@ -234,6 +265,12 @@ export class PolishModule {
             console.error('Error fetching word details:', error);
             this.showError(`Failed to load details for "${word}". ${error.message}`);
         }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     initialize() {

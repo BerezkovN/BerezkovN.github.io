@@ -1,0 +1,386 @@
+export class WiktionaryAPI {
+    constructor() {
+        this.baseUrl = 'https://pl.wiktionary.org/w/api.php';
+        this.cache = new Map();
+    }
+
+    async fetchWordData(word) {
+        // Check cache first
+        if (this.cache.has(word)) {
+            return this.cache.get(word);
+        }
+
+        try {
+            // Fetch the page content
+            const pageContent = await this.fetchPageContent(word);
+            if (!pageContent) {
+                throw new Error(`Word "${word}" not found`);
+            }
+
+            // Parse the wikitext content
+            const parsedData = this.parseWikitext(pageContent, word);
+            
+            // Cache the result
+            this.cache.set(word, parsedData);
+            
+            return parsedData;
+        } catch (error) {
+            console.error('Error fetching Wiktionary data:', error);
+            throw error;
+        }
+    }
+
+    async fetchPageContent(word) {
+        const params = new URLSearchParams({
+            action: 'query',
+            format: 'json',
+            titles: word,
+            prop: 'revisions',
+            rvprop: 'content',
+            origin: '*'
+        });
+
+        const response = await fetch(`${this.baseUrl}?${params}`);
+        const data = await response.json();
+
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        
+        if (pageId === '-1') {
+            return null; // Page not found
+        }
+
+        return pages[pageId].revisions[0]['*'];
+    }
+
+    parseWikitext(wikitext, word) {
+        const result = {
+            word: word,
+            meanings: [],
+            conjugations: {},
+            examples: [],
+            etymology: '',
+            pronunciation: '',
+            partOfSpeech: ''
+        };
+
+        // Split text into lines for easier processing
+        const lines = wikitext.split('\n');
+        
+        // Find sections
+        const sections = this.findSections(lines);
+        
+        // Extract data from each section
+        if (sections.wymowa) {
+            result.pronunciation = this.extractPronunciation(sections.wymowa);
+        }
+        
+        if (sections.znaczenia) {
+            const meaningData = this.extractMeanings(sections.znaczenia);
+            result.meanings = meaningData.meanings;
+            result.partOfSpeech = meaningData.partOfSpeech;
+        }
+        
+        if (sections.odmiana) {
+            result.conjugations = this.extractConjugations(sections.odmiana);
+        }
+        
+        if (sections.przykłady) {
+            result.examples = this.extractExamples(sections.przykłady);
+        }
+        
+        if (sections.etymologia) {
+            result.etymology = this.extractEtymology(sections.etymologia);
+        }
+
+        return result;
+    }
+
+    findSections(lines) {
+        const sections = {};
+        let currentSection = null;
+        let currentContent = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            
+            // Check for section headers
+            if (line.startsWith('{{wymowa}}')) {
+                if (currentSection) {
+                    sections[currentSection] = currentContent.slice();
+                }
+                currentSection = 'wymowa';
+                currentContent = [];
+            } else if (line.startsWith('{{znaczenia}}')) {
+                if (currentSection) {
+                    sections[currentSection] = currentContent.slice();
+                }
+                currentSection = 'znaczenia';
+                currentContent = [];
+            } else if (line.startsWith('{{odmiana}}')) {
+                if (currentSection) {
+                    sections[currentSection] = currentContent.slice();
+                }
+                currentSection = 'odmiana';
+                currentContent = [];
+            } else if (line.startsWith('{{przykłady}}')) {
+                if (currentSection) {
+                    sections[currentSection] = currentContent.slice();
+                }
+                currentSection = 'przykłady';
+                currentContent = [];
+            } else if (line.startsWith('{{etymologia}}')) {
+                if (currentSection) {
+                    sections[currentSection] = currentContent.slice();
+                }
+                currentSection = 'etymologia';
+                currentContent = [];
+            } else if (line.startsWith('{{') && currentSection) {
+                // New section started, save current one
+                sections[currentSection] = currentContent.slice();
+                currentSection = null;
+                currentContent = [];
+            } else if (currentSection) {
+                currentContent.push(line);
+            }
+        }
+        
+        // Don't forget the last section
+        if (currentSection) {
+            sections[currentSection] = currentContent.slice();
+        }
+
+        return sections;
+    }
+
+    extractPronunciation(lines) {
+        for (const line of lines) {
+            if (line.includes('{{IPA3|')) {
+                const start = line.indexOf('{{IPA3|') + 7;
+                const end = line.indexOf('}}', start);
+                if (end > start) {
+                    return `[${line.substring(start, end)}]`;
+                }
+            } else if (line.includes('{{IPA|')) {
+                const start = line.indexOf('{{IPA|') + 6;
+                const end = line.indexOf('}}', start);
+                if (end > start) {
+                    return `[${line.substring(start, end)}]`;
+                }
+            }
+        }
+        return '';
+    }
+
+    extractMeanings(lines) {
+        const meanings = [];
+        let partOfSpeech = '';
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            
+            // The first non-empty line usually contains the part of speech - this is crucial!
+            if (i === 0 && line.trim()) {
+                partOfSpeech = this.processTemplatesAndLinks(line);
+                meanings.push(partOfSpeech); // Include this as the first "meaning"
+                continue;
+            }
+            
+            // Look for meanings starting with : (number)
+            if (line.startsWith(': (') && line.includes(')')) {
+                const numberEnd = line.indexOf(')');
+                const number = line.substring(3, numberEnd); // Extract number like "1.1"
+                const meaning = line.substring(numberEnd + 1).trim();
+                
+                if (meaning) {
+                    const meaningWithLinks = this.processTemplatesAndLinks(meaning);
+                    meanings.push(`(${number}) ${meaningWithLinks}`);
+                }
+            }
+        }
+        
+        return { meanings, partOfSpeech };
+    }
+
+    extractConjugations(lines) {
+        const conjugations = {};
+        let inTemplate = false;
+        let templateContent = '';
+        
+        for (const line of lines) {
+            if (line.includes('{{odmiana-')) {
+                inTemplate = true;
+                templateContent = line;
+            } else if (inTemplate) {
+                if (line.includes('}}')) {
+                    templateContent += ' ' + line;
+                    inTemplate = false;
+                    // Process the complete template
+                    this.parseConjugationTemplate(templateContent, conjugations);
+                } else if (line.includes('|')) {
+                    templateContent += ' ' + line;
+                }
+            }
+        }
+        
+        return conjugations;
+    }
+
+    parseConjugationTemplate(template, conjugations) {
+        // Split by | and process each parameter
+        const parts = template.split('|');
+        
+        for (const part of parts) {
+            if (part.includes('=')) {
+                const [key, value] = part.split('=', 2);
+                const cleanKey = key.trim();
+                const cleanValue = value.trim();
+                
+                if (cleanValue && cleanValue !== '{{odmiana-czasownik-polski' && !cleanValue.includes('}}')) {
+                    // Map common conjugation keys to readable forms
+                    const keyMap = {
+                        'zrobię': 'ja',
+                        'zrobi': 'on/ona/ono',
+                        'zrobią': 'oni/one',
+                        'zrobiłem': 'ja (przeszły)',
+                        'zrobił': 'on (przeszły)',
+                        'zrobiła': 'ona (przeszła)',
+                        'zrobili': 'oni (przeszły)',
+                        'zrób': 'tryb rozkazujący',
+                        'zrobiwszy': 'imiesłów',
+                        'zrobiony': 'imiesłów bierny',
+                        'zrobienie': 'rzeczownik odczasownikowy'
+                    };
+                    
+                    const displayKey = keyMap[cleanKey] || cleanKey;
+                    conjugations[displayKey] = cleanValue;
+                }
+            }
+        }
+    }
+
+    extractExamples(lines) {
+        const examples = [];
+        
+        for (const line of lines) {
+            if (line.startsWith(': (') && line.includes(')')) {
+                const numberEnd = line.indexOf(')');
+                const restOfLine = line.substring(numberEnd + 1).trim();
+                
+                // Look for text in single quotes (italic)
+                if (restOfLine.startsWith("''") && restOfLine.endsWith("''")) {
+                    const example = restOfLine.substring(2, restOfLine.length - 2);
+                    const exampleWithLinks = this.processTemplatesAndLinks(example);
+                    examples.push({
+                        polish: exampleWithLinks,
+                        translation: ''
+                    });
+                }
+            }
+        }
+        
+        return examples;
+    }
+
+    extractEtymology(lines) {
+        for (const line of lines) {
+            if (line.startsWith(':')) {
+                const etymology = line.substring(1).trim();
+                return this.processTemplatesAndLinks(etymology);
+            }
+        }
+        return '';
+    }
+
+    processTemplatesAndLinks(text) {
+        let result = text;
+        
+        // First, handle templates {{...}}
+        result = this.processTemplates(result);
+        
+        // Then, convert wikilinks to HTML
+        result = this.convertWikiLinksToHtml(result);
+        
+        return result;
+    }
+
+    processTemplates(text) {
+        let result = text;
+        
+        // Process templates {{...}}
+        while (result.includes('{{') && result.includes('}}')) {
+            const start = result.indexOf('{{');
+            const end = result.indexOf('}}', start);
+            if (end === -1) break;
+            
+            const templateContent = result.substring(start + 2, end);
+            
+            // If template contains |, hide it completely
+            if (templateContent.includes('|')) {
+                result = result.substring(0, start) + result.substring(end + 2);
+            } else {
+                // If no |, show the template content as simple text
+                result = result.substring(0, start) + templateContent + result.substring(end + 2);
+            }
+        }
+        
+        return result;
+    }
+
+    convertWikiLinksToHtml(text) {
+        let result = text;
+        
+        // Handle [[word|display]] format first
+        while (result.includes('[[') && result.includes('|') && result.includes(']]')) {
+            const start = result.indexOf('[[');
+            const end = result.indexOf(']]', start);
+            if (end === -1) break;
+            
+            const linkContent = result.substring(start + 2, end);
+            if (linkContent.includes('|')) {
+                const [word, display] = linkContent.split('|', 2);
+                const link = `<a href="https://pl.wiktionary.org/wiki/${encodeURIComponent(word)}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${display}</a>`;
+                result = result.substring(0, start) + link + result.substring(end + 2);
+            } else {
+                // Handle as simple [[word]] case
+                const word = linkContent;
+                const link = `<a href="https://pl.wiktionary.org/wiki/${encodeURIComponent(word)}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${word}</a>`;
+                result = result.substring(0, start) + link + result.substring(end + 2);
+            }
+        }
+        
+        // Handle remaining simple [[word]] format
+        while (result.includes('[[') && result.includes(']]')) {
+            const start = result.indexOf('[[');
+            const end = result.indexOf(']]', start);
+            if (end === -1) break;
+            
+            const word = result.substring(start + 2, end);
+            if (!word.includes('|')) { // Make sure it's not a complex link we missed
+                const link = `<a href="https://pl.wiktionary.org/wiki/${encodeURIComponent(word)}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${word}</a>`;
+                result = result.substring(0, start) + link + result.substring(end + 2);
+            } else {
+                break; // Avoid infinite loop
+            }
+        }
+        
+        return result;
+    }
+
+    async searchWords(query) {
+        const params = new URLSearchParams({
+            action: 'opensearch',
+            format: 'json',
+            search: query,
+            limit: '10',
+            namespace: '0',
+            origin: '*'
+        });
+
+        const response = await fetch(`${this.baseUrl}?${params}`);
+        const data = await response.json();
+        
+        // OpenSearch returns [query, [titles], [descriptions], [urls]]
+        return data[1] || [];
+    }
+}

@@ -1,10 +1,12 @@
 import { ChineseModule } from './chinese.js';
 import { PolishModule } from './polish.js';
+import { WiktionaryAPI } from './wiktionary.js';
 
 class LanguageLearningApp {
     constructor() {
         this.chineseModule = new ChineseModule();
         this.polishModule = new PolishModule();
+        this.wiktionaryAPI = new WiktionaryAPI();
         this.currentSection = 'chinese';
         this.currentTheme = this.loadThemePreference();
         this.initializeTheme();
@@ -125,61 +127,73 @@ class LanguageLearningApp {
     }
 
     setupPolishDataFetchers() {
-        // Example implementation - replace with your actual data fetching logic
-        
-        // Override fetchSuggestions
+        // Use Wiktionary API for fetching suggestions
         this.polishModule.fetchSuggestions = async (query) => {
-            // This is a placeholder implementation
-            // Replace with your actual API call or data source
-            console.log(`Fetching suggestions for: ${query}`);
-            
-            // Simulated suggestions - replace with real data
-            const mockSuggestions = [
-                'dom', 'domy', 'domowy', 'domek',
-                'kot', 'koty', 'kotek', 'kotka',
-                'pies', 'pieski', 'piesek',
-                'książka', 'książki', 'książeczka'
-            ];
-            
-            return mockSuggestions.filter(word => 
-                word.toLowerCase().startsWith(query.toLowerCase())
-            ).slice(0, 5);
+            try {
+                const suggestions = await this.wiktionaryAPI.searchWords(query);
+                return suggestions.slice(0, 8); // Return top 8 suggestions
+            } catch (error) {
+                console.error('Error fetching suggestions:', error);
+                return [];
+            }
         };
 
-        // Override fetchWordDetails
+        // Use Wiktionary API for fetching word details
         this.polishModule.fetchWordDetails = async (word) => {
-            // This is a placeholder implementation
-            // Replace with your actual API call or data source
-            console.log(`Fetching details for word: ${word}`);
-            
-            // Simulated word details - replace with real data
-            return {
-                polishExplanation: `${word} - przykładowe wyjaśnienie słowa w języku polskim. To jest miejsce na rzeczywistą definicję.`,
-                englishTranslation: `${word} - example English translation. This is a placeholder for the actual translation.`,
-                grammarTable: {
-                    'Nominative (Mianownik)': word,
-                    'Genitive (Dopełniacz)': `${word}u/a`,
-                    'Dative (Celownik)': `${word}owi/e`,
-                    'Accusative (Biernik)': word,
-                    'Instrumental (Narzędnik)': `${word}em/ą`,
-                    'Locative (Miejscownik)': `${word}u/e`,
-                    'Vocative (Wołacz)': `${word}u/e`
-                },
-                examples: [
-                    {
-                        polish: `To jest ${word}.`,
-                        english: `This is a ${word}.`
-                    },
-                    {
-                        polish: `Widzę ${word} na stole.`,
-                        english: `I see a ${word} on the table.`
-                    },
-                    {
-                        polish: `Idę do ${word}u.`,
-                        english: `I'm going to the ${word}.`
-                    }
-                ]
-            };
+            try {
+                const wiktionaryData = await this.wiktionaryAPI.fetchWordData(word);
+                
+                // Format the data for our Polish module
+                const formattedData = {
+                    polishExplanation: '',
+                    englishTranslation: '',
+                    grammarTable: {},
+                    examples: [],
+                    pronunciation: wiktionaryData.pronunciation || '',
+                    etymology: wiktionaryData.etymology || ''
+                };
+
+                // Format meanings
+                if (wiktionaryData.meanings && wiktionaryData.meanings.length > 0) {
+                    formattedData.polishExplanation = wiktionaryData.meanings.map((meaning, index) => 
+                        `${index + 1}. ${meaning}`
+                    ).join('\n');
+                } else {
+                    formattedData.polishExplanation = 'Brak definicji';
+                }
+
+                // Format conjugations/declensions
+                if (wiktionaryData.conjugations && Object.keys(wiktionaryData.conjugations).length > 0) {
+                    // Map Polish case names to display format
+                    const caseMapping = {
+                        'mianownik': 'Mianownik (kto? co?)',
+                        'dopełniacz': 'Dopełniacz (kogo? czego?)',
+                        'celownik': 'Celownik (komu? czemu?)',
+                        'biernik': 'Biernik (kogo? co?)',
+                        'narzędnik': 'Narzędnik (kim? czym?)',
+                        'miejscownik': 'Miejscownik (o kim? o czym?)',
+                        'wołacz': 'Wołacz (o!)'
+                    };
+
+                    Object.entries(wiktionaryData.conjugations).forEach(([key, value]) => {
+                        const displayKey = caseMapping[key.toLowerCase()] || key;
+                        formattedData.grammarTable[displayKey] = value;
+                    });
+                }
+
+                // Format examples
+                if (wiktionaryData.examples && wiktionaryData.examples.length > 0) {
+                    formattedData.examples = wiktionaryData.examples.map(ex => ({
+                        polish: ex.polish,
+                        english: ex.translation || ''
+                    }));
+                }
+
+                return formattedData;
+            } catch (error) {
+                console.error('Error fetching word details:', error);
+                throw new Error(`Nie można pobrać informacji o słowie "${word}"`);
+            }
         };
     }
 }
