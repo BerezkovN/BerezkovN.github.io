@@ -6,12 +6,13 @@ export class WiktionaryAPI {
 
     async fetchWordData(word) {
         // Check cache first
-        if (this.cache.has(word)) {
-            return this.cache.get(word);
+        const cacheKey = `pl:${word}`;
+        if (this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey);
         }
 
         try {
-            // Fetch the page content
+            // Fetch the page content from Polish Wiktionary
             const pageContent = await this.fetchPageContent(word);
             if (!pageContent) {
                 throw new Error(`Word "${word}" not found`);
@@ -21,12 +22,39 @@ export class WiktionaryAPI {
             const parsedData = this.parseWikitext(pageContent, word);
             
             // Cache the result
-            this.cache.set(word, parsedData);
+            this.cache.set(cacheKey, parsedData);
             
             return parsedData;
         } catch (error) {
             console.error('Error fetching Wiktionary data:', error);
             throw error;
+        }
+    }
+
+    async fetchEnglishWordData(word) {
+        // Check cache first
+        const cacheKey = `en:${word}`;
+        if (this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey);
+        }
+
+        try {
+            // Fetch the page content from English Wiktionary
+            const pageContent = await this.fetchEnglishPageContent(word);
+            if (!pageContent) {
+                return { word, meanings: [], conjugations: {}, examples: [], etymology: '', pronunciation: '' };
+            }
+
+            // Parse the English wikitext content
+            const parsedData = this.parseEnglishWikitext(pageContent, word);
+            
+            // Cache the result
+            this.cache.set(cacheKey, parsedData);
+            
+            return parsedData;
+        } catch (error) {
+            console.error('Error fetching English Wiktionary data:', error);
+            return { word, meanings: [], conjugations: {}, examples: [], etymology: '', pronunciation: '' };
         }
     }
 
@@ -51,6 +79,110 @@ export class WiktionaryAPI {
         }
 
         return pages[pageId].revisions[0]['*'];
+    }
+
+    async fetchEnglishPageContent(word) {
+        const params = new URLSearchParams({
+            action: 'query',
+            format: 'json',
+            titles: word,
+            prop: 'revisions',
+            rvprop: 'content',
+            origin: '*'
+        });
+
+        const englishBaseUrl = 'https://en.wiktionary.org/w/api.php';
+        const response = await fetch(`${englishBaseUrl}?${params}`);
+        const data = await response.json();
+
+        const pages = data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        
+        if (pageId === '-1') {
+            return null; // Page not found
+        }
+
+        return pages[pageId].revisions[0]['*'];
+    }
+
+    parseEnglishWikitext(wikitext, word) {
+        const result = {
+            word: word,
+            meanings: [],
+            conjugations: {},
+            examples: [],
+            etymology: '',
+            pronunciation: ''
+        };
+
+        // Split text into lines for easier processing
+        const lines = wikitext.split('\n');
+        
+        // Extract definitions from all part-of-speech sections
+        result.meanings = this.extractEnglishMeanings(lines);
+        
+        return result;
+    }
+
+    extractEnglishMeanings(lines) {
+        const meanings = [];
+        let currentPartOfSpeech = '';
+        let inDefinitionSection = false;
+        
+        for (const line of lines) {
+            const trimmed = line.trim();
+            
+            // Look for part of speech headers (like ===Noun===, ===Verb===, ===Adjective===)
+            if (trimmed.startsWith('===') && trimmed.endsWith('===')) {
+                const partOfSpeech = trimmed.replace(/=/g, '').trim();
+                
+                // Check if it's a valid part of speech
+                const validPartsOfSpeech = ['Noun', 'Verb', 'Adjective', 'Adverb', 'Pronoun', 
+                    'Preposition', 'Conjunction', 'Interjection', 'Particle', 'Determiner'];
+                
+                if (validPartsOfSpeech.includes(partOfSpeech)) {
+                    currentPartOfSpeech = partOfSpeech.toLowerCase();
+                    inDefinitionSection = true;
+                } else {
+                    // Hit a non-part-of-speech section, stop looking for definitions
+                    inDefinitionSection = false;
+                }
+                continue;
+            }
+            
+            // Stop if we hit a new level 3 or 4 section that's not a part of speech
+            if ((trimmed.startsWith('===') || trimmed.startsWith('====')) && inDefinitionSection) {
+                const sectionName = trimmed.replace(/=/g, '').trim();
+                if (sectionName.includes('Etymology') || sectionName.includes('Pronunciation') || 
+                    sectionName.includes('References') || sectionName.includes('Further') ||
+                    sectionName.includes('Usage') || sectionName.includes('Synonyms') ||
+                    sectionName.includes('Antonyms') || sectionName.includes('Derived')) {
+                    inDefinitionSection = false;
+                }
+                continue;
+            }
+            
+            // Extract numbered definitions
+            if (inDefinitionSection && trimmed.startsWith('#') && !trimmed.startsWith('##')) {
+                let definition = trimmed.substring(1).trim();
+                
+                // Clean up the definition
+                definition = definition
+                    .replace(/\[\[([^\]|]+)\|?[^\]]*\]\]/g, '$1') // Remove wiki links
+                    .replace(/\{\{[^}]+\}\}/g, '') // Remove templates
+                    .replace(/'{2,}/g, '') // Remove wiki formatting
+                    .trim();
+                
+                if (definition && !definition.startsWith('{{') && definition.length > 2) {
+                    // Prefix with part of speech if we have one
+                    const formattedDefinition = currentPartOfSpeech ? 
+                        `(${currentPartOfSpeech}) ${definition}` : definition;
+                    meanings.push(formattedDefinition);
+                }
+            }
+        }
+        
+        return meanings;
     }
 
     parseWikitext(wikitext, word) {

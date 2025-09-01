@@ -141,7 +141,11 @@ class LanguageLearningApp {
         // Use Wiktionary API for fetching word details
         this.polishModule.fetchWordDetails = async (word) => {
             try {
-                const wiktionaryData = await this.wiktionaryAPI.fetchWordData(word);
+                // Fetch from both Polish and English Wiktionary
+                const [polishData, englishData] = await Promise.all([
+                    this.wiktionaryAPI.fetchWordData(word),
+                    this.wiktionaryAPI.fetchEnglishWordData(word)
+                ]);
 
                 // Format the data for our Polish module
                 const formattedData = {
@@ -149,19 +153,26 @@ class LanguageLearningApp {
                     englishTranslation: '',
                     grammarTable: {},
                     examples: [],
-                    pronunciation: wiktionaryData.pronunciation || '',
-                    etymology: wiktionaryData.etymology || ''
+                    pronunciation: polishData.pronunciation || '',
+                    etymology: polishData.etymology || ''
                 };
 
-                // Format meanings
-                if (wiktionaryData.meanings && wiktionaryData.meanings.length > 0) {
-                    formattedData.polishExplanation = wiktionaryData.meanings.join('\n');
+                // Format Polish meanings
+                if (polishData.meanings && polishData.meanings.length > 0) {
+                    formattedData.polishExplanation = polishData.meanings.join('\n');
                 } else {
                     formattedData.polishExplanation = 'Brak definicji';
                 }
 
+                // Format English translations
+                if (englishData.meanings && englishData.meanings.length > 0) {
+                    formattedData.englishTranslation = englishData.meanings.join('<br>');
+                } else {
+                    formattedData.englishTranslation = 'No English definition available';
+                }
+
                 // Format conjugations/declensions
-                if (wiktionaryData.conjugations && Object.keys(wiktionaryData.conjugations).length > 0) {
+                if (polishData.conjugations && Object.keys(polishData.conjugations).length > 0) {
                     // Map Polish case names to display format
                     const caseMapping = {
                         'mianownik': 'Mianownik (kto? co?)',
@@ -173,15 +184,15 @@ class LanguageLearningApp {
                         'wołacz': 'Wołacz (o!)'
                     };
 
-                    Object.entries(wiktionaryData.conjugations).forEach(([key, value]) => {
+                    Object.entries(polishData.conjugations).forEach(([key, value]) => {
                         const displayKey = caseMapping[key.toLowerCase()] || key;
                         formattedData.grammarTable[displayKey] = value;
                     });
                 }
 
                 // Format examples
-                if (wiktionaryData.examples && wiktionaryData.examples.length > 0) {
-                    formattedData.examples = wiktionaryData.examples.map(ex => ({
+                if (polishData.examples && polishData.examples.length > 0) {
+                    formattedData.examples = polishData.examples.map(ex => ({
                         polish: ex.polish,
                         english: ex.translation || ''
                     }));
