@@ -101,13 +101,13 @@ export class PolishModule {
 
     renderGrammarTable(grammarData) {
         const table = document.createElement('table');
-        table.className = 'min-w-full divide-y divide-gray-200';
+        table.className = 'table-base';
 
         const thead = document.createElement('thead');
-        thead.className = 'bg-gray-50';
+        thead.className = 'table-header';
         
         const tbody = document.createElement('tbody');
-        tbody.className = 'bg-white divide-y divide-gray-200';
+        tbody.className = 'table-body';
 
         // This is a flexible implementation that will adapt to different grammar table structures
         // The actual structure will depend on your data format
@@ -119,7 +119,7 @@ export class PolishModule {
                     // First row as header
                     row.forEach(cell => {
                         const th = document.createElement('th');
-                        th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+                        th.className = 'table-header-cell';
                         th.textContent = cell;
                         tr.appendChild(th);
                     });
@@ -128,7 +128,7 @@ export class PolishModule {
                     // Data rows
                     row.forEach(cell => {
                         const td = document.createElement('td');
-                        td.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-900';
+                        td.className = 'table-cell';
                         td.textContent = cell;
                         tr.appendChild(td);
                     });
@@ -139,12 +139,12 @@ export class PolishModule {
             // Handle object format
             const headerRow = document.createElement('tr');
             const caseHeader = document.createElement('th');
-            caseHeader.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+            caseHeader.className = 'table-header-cell';
             caseHeader.textContent = 'Case';
             headerRow.appendChild(caseHeader);
             
             const formHeader = document.createElement('th');
-            formHeader.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+            formHeader.className = 'table-header-cell';
             formHeader.textContent = 'Form';
             headerRow.appendChild(formHeader);
             thead.appendChild(headerRow);
@@ -153,12 +153,12 @@ export class PolishModule {
                 const tr = document.createElement('tr');
                 
                 const tdKey = document.createElement('td');
-                tdKey.className = 'px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900';
+                tdKey.className = 'table-cell-bold';
                 tdKey.textContent = key;
                 tr.appendChild(tdKey);
                 
                 const tdValue = document.createElement('td');
-                tdValue.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-900';
+                tdValue.className = 'table-cell';
                 tdValue.textContent = value;
                 tr.appendChild(tdValue);
                 

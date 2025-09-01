@@ -120,7 +120,32 @@
     }
     
     .character-card {
-        @apply bg-gray-100 dark:bg-gray-700 rounded-lg p-4 transition-all duration-200 hover:transform hover:-translate-y-1 hover:shadow-md;
+        @apply bg-gray-100 rounded-lg p-4 transition-all duration-200 hover:transform hover:-translate-y-1 hover:shadow-md;
+    }
+    
+    /* Table Components */
+    .table-base {
+        @apply min-w-full divide-y divide-gray-200 dark:divide-gray-600;
+    }
+    
+    .table-header {
+        @apply bg-gray-50 dark:bg-gray-700;
+    }
+    
+    .table-header-cell {
+        @apply px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider;
+    }
+    
+    .table-body {
+        @apply bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600;
+    }
+    
+    .table-cell {
+        @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100;
+    }
+    
+    .table-cell-bold {
+        @apply px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100;
     }
 }
 
@@ -166,16 +191,7 @@
     transition: all 0.2s ease;
 }
 
-/* Dark mode character backgrounds */
-.dark #traditional-container > div,
-.dark #simplified-container > div {
-    background-color: rgb(55 65 81);
-}
-
-.dark #traditional-container > div:hover,
-.dark #simplified-container > div:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
+/* Remove dark mode effect for character cards - keep them always light */
 
 /* Suggestions dropdown animation */
 #suggestions {

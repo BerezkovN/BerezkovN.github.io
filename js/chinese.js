@@ -90,7 +90,7 @@ export class ChineseModule {
 
         const nextStrokeBtn = document.createElement("button");
         nextStrokeBtn.textContent = "Next Stroke";
-        nextStrokeBtn.className = "btn-primary text-sm";
+        nextStrokeBtn.className = "btn-primary text-sm w-28";
         
         let currentStroke = 0;
         nextStrokeBtn.addEventListener('click', () => {
@@ -109,7 +109,7 @@ export class ChineseModule {
 
         const showAllBtn = document.createElement("button");
         showAllBtn.textContent = "Show All";
-        showAllBtn.className = "btn-secondary text-sm";
+        showAllBtn.className = "btn-secondary text-sm w-28";
         showAllBtn.addEventListener('click', () => {
             writer.showCharacter();
             currentStroke = strokeCount;
