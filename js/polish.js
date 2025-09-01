@@ -8,6 +8,12 @@ export class PolishModule {
         this.errorState = null;
         this.currentSuggestions = [];
         this.debounceTimer = null;
+        
+        // History navigation
+        this.history = [];
+        this.currentHistoryIndex = -1;
+        this.backButton = null;
+        this.forwardButton = null;
     }
 
     async fetchSuggestions(query) {
@@ -244,7 +250,7 @@ export class PolishModule {
         this.wordDetailsContainer.classList.remove('hidden');
     }
 
-    async searchWord(word) {
+    async searchWord(word, addToHistory = true) {
         if (!word || word.trim() === '') {
             return;
         }
@@ -255,9 +261,75 @@ export class PolishModule {
         try {
             const wordData = await this.fetchWordDetails(word);
             this.displayWordDetails(wordData);
+            
+            if (addToHistory) {
+                this.addToHistory(word);
+            }
         } catch (error) {
             console.error('Error fetching word details:', error);
             this.showError(`Failed to load details for "${word}". ${error.message}`);
+        }
+    }
+
+    addToHistory(word) {
+        // Don't add duplicate consecutive entries
+        if (this.history.length > 0 && this.history[this.currentHistoryIndex] === word) {
+            return;
+        }
+
+        // Remove any entries after current position (when going back then searching new word)
+        if (this.currentHistoryIndex < this.history.length - 1) {
+            this.history = this.history.slice(0, this.currentHistoryIndex + 1);
+        }
+
+        // Add new word to history
+        this.history.push(word);
+        this.currentHistoryIndex = this.history.length - 1;
+
+        // Limit history size to prevent memory issues
+        if (this.history.length > 50) {
+            this.history = this.history.slice(-50);
+            this.currentHistoryIndex = this.history.length - 1;
+        }
+
+        this.updateNavigationButtons();
+    }
+
+    goBack() {
+        if (this.currentHistoryIndex > 0) {
+            this.currentHistoryIndex--;
+            const word = this.history[this.currentHistoryIndex];
+            this.searchInput.value = word;
+            this.searchWord(word, false); // Don't add to history
+            this.updateNavigationButtons();
+        }
+    }
+
+    goForward() {
+        if (this.currentHistoryIndex < this.history.length - 1) {
+            this.currentHistoryIndex++;
+            const word = this.history[this.currentHistoryIndex];
+            this.searchInput.value = word;
+            this.searchWord(word, false); // Don't add to history
+            this.updateNavigationButtons();
+        }
+    }
+
+    updateNavigationButtons() {
+        if (this.backButton && this.forwardButton) {
+            // Update back button
+            if (this.currentHistoryIndex > 0) {
+                this.backButton.disabled = false;
+            } else {
+                this.backButton.disabled = true;
+            }
+
+            // Update forward button
+            if (this.currentHistoryIndex < this.history.length - 1) {
+                this.forwardButton.disabled = false;
+            } else {
+                this.forwardButton.disabled = true;
+            }
         }
     }
 
@@ -275,6 +347,8 @@ export class PolishModule {
         this.wordDetailsContainer = document.getElementById('wordDetails');
         this.loadingState = document.getElementById('loadingState');
         this.errorState = document.getElementById('errorState');
+        this.backButton = document.getElementById('backButton');
+        this.forwardButton = document.getElementById('forwardButton');
 
         // Set up event listeners
         if (this.searchInput) {
@@ -300,6 +374,19 @@ export class PolishModule {
         if (this.searchButton) {
             this.searchButton.addEventListener('click', () => {
                 this.searchWord(this.searchInput.value);
+            });
+        }
+
+        // Set up navigation button listeners
+        if (this.backButton) {
+            this.backButton.addEventListener('click', () => {
+                this.goBack();
+            });
+        }
+
+        if (this.forwardButton) {
+            this.forwardButton.addEventListener('click', () => {
+                this.goForward();
             });
         }
     }
