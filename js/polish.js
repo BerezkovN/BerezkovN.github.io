@@ -178,15 +178,9 @@ export class PolishModule {
         // Polish Explanation
         const polishExplanationEl = document.getElementById('polishExplanation');
         if (wordData.polishExplanation) {
-            // Handle multi-line definitions
-            const meanings = wordData.polishExplanation.split('\n');
-            if (meanings.length > 1) {
-                polishExplanationEl.innerHTML = '<ul class="list-disc list-inside space-y-1">' +
-                    meanings.map(meaning => `<li>${meaning}</li>`).join('') +
-                    '</ul>';
-            } else {
-                polishExplanationEl.innerHTML = wordData.polishExplanation;
-            }
+            // Display as seamless text without list formatting
+            const meanings = wordData.polishExplanation.split('\n').filter(line => line.trim());
+            polishExplanationEl.innerHTML = meanings.join('<br>');
         } else {
             polishExplanationEl.innerHTML = '<span class="text-secondary">Brak definicji</span>';
         }

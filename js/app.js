@@ -155,9 +155,7 @@ class LanguageLearningApp {
 
                 // Format meanings
                 if (wiktionaryData.meanings && wiktionaryData.meanings.length > 0) {
-                    formattedData.polishExplanation = wiktionaryData.meanings.map((meaning, index) => 
-                        `${index + 1}. ${meaning}`
-                    ).join('\n');
+                    formattedData.polishExplanation = wiktionaryData.meanings.join('\n');
                 } else {
                     formattedData.polishExplanation = 'Brak definicji';
                 }
