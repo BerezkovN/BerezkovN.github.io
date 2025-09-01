@@ -178,6 +178,10 @@ export class ChineseModule {
                     }
                 }
             });
+            
+            // Set default text and generate immediately
+            hanziInput.value = '學習';
+            this.processInput('學習');
         }
     }
 }
