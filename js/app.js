@@ -7,7 +7,7 @@ class LanguageLearningApp {
         this.chineseModule = new ChineseModule();
         this.polishModule = new PolishModule();
         this.wiktionaryAPI = new WiktionaryAPI();
-        this.currentSection = 'chinese';
+        this.currentSection = 'polish';
         this.currentTheme = this.loadThemePreference();
         this.initializeTheme();
         this.initializeTabs();
@@ -142,7 +142,7 @@ class LanguageLearningApp {
         this.polishModule.fetchWordDetails = async (word) => {
             try {
                 const wiktionaryData = await this.wiktionaryAPI.fetchWordData(word);
-                
+
                 // Format the data for our Polish module
                 const formattedData = {
                     polishExplanation: '',
@@ -204,4 +204,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Expose app instance for debugging (optional)
     window.languageLearningApp = app;
+    
+    // Global function to search Polish words from wiki links
+    window.searchPolishWord = (word) => {
+        // Make sure we're on the Polish tab
+        if (app.currentSection !== 'polish') {
+            app.switchToSection('polish');
+        }
+        
+        // Update the search input
+        const searchInput = document.getElementById('polishSearchInput');
+        if (searchInput) {
+            searchInput.value = word;
+            // Trigger the search
+            app.polishModule.searchWord(word);
+        }
+    };
 });

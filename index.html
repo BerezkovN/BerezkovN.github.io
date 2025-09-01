@@ -19,10 +19,10 @@
             <div class="flex justify-between items-center py-4">
                 <h1 class="heading-primary">Language Learning Hub</h1>
                 <div class="flex items-center space-x-4">
-                    <button id="chineseTab" class="tab tab-active">
+                    <button id="chineseTab" class="tab tab-inactive">
                         中文 Chinese
                     </button>
-                    <button id="polishTab" class="tab tab-inactive">
+                    <button id="polishTab" class="tab tab-active">
                         Polski Polish
                     </button>
                     <button id="themeToggle" class="btn-icon" aria-label="Toggle theme">
@@ -39,7 +39,7 @@
     </nav>
 
     <!-- Chinese Section -->
-    <section id="chineseSection" class="container-section">
+    <section id="chineseSection" class="container-section hidden">
         <div class="max-width-wrapper">
             <div class="card mb-6">
                 <h2 class="heading-secondary mb-4">Chinese Character Practice</h2>
@@ -79,7 +79,7 @@
     </section>
 
     <!-- Polish Section -->
-    <section id="polishSection" class="container-section hidden">
+    <section id="polishSection" class="container-section">
         <div class="max-width-wrapper-md">
             <!-- Search Box -->
             <div class="card mb-6">
