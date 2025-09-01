@@ -14,6 +14,9 @@ export class PolishModule {
         this.currentHistoryIndex = -1;
         this.backButton = null;
         this.forwardButton = null;
+        
+        // Keyboard navigation for suggestions
+        this.selectedSuggestionIndex = -1;
     }
 
     async fetchSuggestions(query) {
@@ -38,16 +41,18 @@ export class PolishModule {
 
     showSuggestions(suggestions) {
         this.suggestionsContainer.innerHTML = '';
+        this.selectedSuggestionIndex = -1;
         
         if (suggestions.length === 0) {
             this.hideSuggestions();
             return;
         }
 
-        suggestions.forEach(suggestion => {
+        suggestions.forEach((suggestion, index) => {
             const item = document.createElement('div');
-            item.className = 'px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors text-primary';
+            item.className = 'suggestion-item';
             item.textContent = suggestion;
+            item.dataset.index = index;
             
             item.addEventListener('click', () => {
                 this.searchInput.value = suggestion;
@@ -63,6 +68,47 @@ export class PolishModule {
 
     hideSuggestions() {
         this.suggestionsContainer.classList.add('hidden');
+        this.selectedSuggestionIndex = -1;
+    }
+
+    updateSuggestionHighlight() {
+        const suggestions = this.suggestionsContainer.querySelectorAll('.suggestion-item');
+        suggestions.forEach((item, index) => {
+            if (index === this.selectedSuggestionIndex) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    selectSuggestion(index) {
+        const suggestions = this.suggestionsContainer.querySelectorAll('.suggestion-item');
+        if (index >= 0 && index < suggestions.length) {
+            const selectedSuggestion = suggestions[index].textContent;
+            this.searchInput.value = selectedSuggestion;
+            this.hideSuggestions();
+            this.searchWord(selectedSuggestion);
+        }
+    }
+
+    navigateSuggestions(direction) {
+        const suggestions = this.suggestionsContainer.querySelectorAll('.suggestion-item');
+        if (suggestions.length === 0) return;
+
+        if (direction === 'down') {
+            this.selectedSuggestionIndex++;
+            if (this.selectedSuggestionIndex >= suggestions.length) {
+                this.selectedSuggestionIndex = 0;
+            }
+        } else if (direction === 'up') {
+            this.selectedSuggestionIndex--;
+            if (this.selectedSuggestionIndex < 0) {
+                this.selectedSuggestionIndex = suggestions.length - 1;
+            }
+        }
+
+        this.updateSuggestionHighlight();
     }
 
     async handleInputChange(value) {
@@ -357,9 +403,24 @@ export class PolishModule {
             });
 
             this.searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
+                const suggestionsVisible = !this.suggestionsContainer.classList.contains('hidden');
+                
+                if (e.key === 'ArrowDown' && suggestionsVisible) {
+                    e.preventDefault();
+                    this.navigateSuggestions('down');
+                } else if (e.key === 'ArrowUp' && suggestionsVisible) {
+                    e.preventDefault();
+                    this.navigateSuggestions('up');
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (suggestionsVisible && this.selectedSuggestionIndex >= 0) {
+                        this.selectSuggestion(this.selectedSuggestionIndex);
+                    } else {
+                        this.hideSuggestions();
+                        this.searchWord(this.searchInput.value);
+                    }
+                } else if (e.key === 'Escape' && suggestionsVisible) {
                     this.hideSuggestions();
-                    this.searchWord(this.searchInput.value);
                 }
             });
 
