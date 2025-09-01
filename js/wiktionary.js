@@ -60,8 +60,7 @@ export class WiktionaryAPI {
             conjugations: {},
             examples: [],
             etymology: '',
-            pronunciation: '',
-            partOfSpeech: ''
+            pronunciation: ''
         };
 
         // Split text into lines for easier processing
@@ -78,7 +77,6 @@ export class WiktionaryAPI {
         if (sections.znaczenia) {
             const meaningData = this.extractMeanings(sections.znaczenia);
             result.meanings = meaningData.meanings;
-            result.partOfSpeech = meaningData.partOfSpeech;
         }
         
         if (sections.odmiana) {
@@ -174,32 +172,13 @@ export class WiktionaryAPI {
 
     extractMeanings(lines) {
         const meanings = [];
-        let partOfSpeech = '';
         
         for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            
-            // The first non-empty line usually contains the part of speech - this is crucial!
-            if (i === 0 && line.trim()) {
-                partOfSpeech = this.processTemplatesAndLinks(line);
-                meanings.push(partOfSpeech); // Include this as the first "meaning"
-                continue;
-            }
-            
-            // Look for meanings starting with : (number)
-            if (line.startsWith(': (') && line.includes(')')) {
-                const numberEnd = line.indexOf(')');
-                const number = line.substring(3, numberEnd); // Extract number like "1.1"
-                const meaning = line.substring(numberEnd + 1).trim();
-                
-                if (meaning) {
-                    const meaningWithLinks = this.processTemplatesAndLinks(meaning);
-                    meanings.push(`(${number}) ${meaningWithLinks}`);
-                }
-            }
+            const line = this.processTemplatesAndLinks(lines[i]);
+            meanings.push(line);
         }
         
-        return { meanings, partOfSpeech };
+        return { meanings };
     }
 
     extractConjugations(lines) {
@@ -315,9 +294,23 @@ export class WiktionaryAPI {
             
             const templateContent = result.substring(start + 2, end);
             
-            // If template contains |, hide it completely
             if (templateContent.includes('|')) {
-                result = result.substring(0, start) + result.substring(end + 2);
+                // Handle special templates that should display both parts
+                const parts = templateContent.split('|');
+                const templateName = parts[0].trim();
+                
+                // Special cases for templates that should show meaningful content
+                if (templateName === 'dokonany od' || templateName === 'niedokonany od' || 
+                    templateName === 'forma' || templateName === 'odmiana' || 
+                    templateName === 'synonim' || templateName === 'antonim') {
+                    // Show as "templateName: parameter"
+                    const parameter = parts[1] ? parts[1].trim() : '';
+                    const replacement = parameter ? `${templateName}: ${parameter}` : templateName;
+                    result = result.substring(0, start) + replacement + result.substring(end + 2);
+                } else {
+                    // For other complex templates, hide completely
+                    result = result.substring(0, start) + result.substring(end + 2);
+                }
             } else {
                 // If no |, show the template content as simple text
                 result = result.substring(0, start) + templateContent + result.substring(end + 2);
@@ -339,12 +332,12 @@ export class WiktionaryAPI {
             const linkContent = result.substring(start + 2, end);
             if (linkContent.includes('|')) {
                 const [word, display] = linkContent.split('|', 2);
-                const link = `<a href="https://pl.wiktionary.org/wiki/${encodeURIComponent(word)}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${display}</a>`;
+                const link = `<a href="#" onclick="window.searchPolishWord('${word.replace(/'/g, "\\'")}'); return false;" class="text-blue-600 hover:text-blue-800 underline cursor-pointer">${display}</a>`;
                 result = result.substring(0, start) + link + result.substring(end + 2);
             } else {
                 // Handle as simple [[word]] case
                 const word = linkContent;
-                const link = `<a href="https://pl.wiktionary.org/wiki/${encodeURIComponent(word)}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${word}</a>`;
+                const link = `<a href="#" onclick="window.searchPolishWord('${word.replace(/'/g, "\\'")}'); return false;" class="text-blue-600 hover:text-blue-800 underline cursor-pointer">${word}</a>`;
                 result = result.substring(0, start) + link + result.substring(end + 2);
             }
         }
@@ -357,7 +350,7 @@ export class WiktionaryAPI {
             
             const word = result.substring(start + 2, end);
             if (!word.includes('|')) { // Make sure it's not a complex link we missed
-                const link = `<a href="https://pl.wiktionary.org/wiki/${encodeURIComponent(word)}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">${word}</a>`;
+                const link = `<a href="#" onclick="window.searchPolishWord('${word.replace(/'/g, "\\'")}'); return false;" class="text-blue-600 hover:text-blue-800 underline cursor-pointer">${word}</a>`;
                 result = result.substring(0, start) + link + result.substring(end + 2);
             } else {
                 break; // Avoid infinite loop
