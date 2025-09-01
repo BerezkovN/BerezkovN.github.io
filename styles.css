@@ -1,0 +1,367 @@
+/* Custom styles for Language Learning Hub */
+
+/* Reusable component classes using @apply */
+@layer components {
+    /* Card Components */
+    .card {
+        @apply bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-colors duration-200;
+    }
+    
+    .card-hover {
+        @apply hover:shadow-lg hover:transform hover:-translate-y-1 transition-all duration-200;
+    }
+    
+    /* Button Components */
+    .btn {
+        @apply px-6 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    }
+    
+    .btn-primary {
+        @apply btn bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500;
+    }
+    
+    .btn-secondary {
+        @apply btn bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 focus:ring-gray-500;
+    }
+    
+    .btn-icon {
+        @apply p-2 rounded-lg bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors duration-200;
+    }
+    
+    /* Tab Components */
+    .tab {
+        @apply px-6 py-2 rounded-lg font-medium transition-colors duration-200 relative overflow-hidden;
+    }
+    
+    .tab-active {
+        @apply bg-blue-500 text-white;
+    }
+    
+    .tab-inactive {
+        @apply bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500;
+    }
+    
+    /* Input Components */
+    .input-field {
+        @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition;
+    }
+    
+    /* Typography Components */
+    .heading-primary {
+        @apply text-2xl font-bold text-gray-800 dark:text-gray-100;
+    }
+    
+    .heading-secondary {
+        @apply text-xl font-semibold text-gray-800 dark:text-gray-100;
+    }
+    
+    .heading-tertiary {
+        @apply text-lg font-semibold text-gray-800 dark:text-gray-100;
+    }
+    
+    .text-primary {
+        @apply text-gray-700 dark:text-gray-300;
+    }
+    
+    .text-secondary {
+        @apply text-gray-600 dark:text-gray-400;
+    }
+    
+    .label {
+        @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2;
+    }
+    
+    /* Navigation Components */
+    .nav-bar {
+        @apply bg-white dark:bg-gray-800 shadow-lg sticky top-0 z-50 transition-colors duration-200;
+    }
+    
+    /* Layout Components */
+    .container-section {
+        @apply container mx-auto px-4 py-8;
+    }
+    
+    .max-width-wrapper {
+        @apply max-w-6xl mx-auto;
+    }
+    
+    .max-width-wrapper-md {
+        @apply max-w-4xl mx-auto;
+    }
+    
+    /* Icon Components */
+    .icon {
+        @apply w-6 h-6 text-gray-700 dark:text-gray-200;
+    }
+    
+    /* Dropdown Components */
+    .dropdown {
+        @apply absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto z-10;
+    }
+    
+    /* Error/Loading States */
+    .error-box {
+        @apply bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6;
+    }
+    
+    .error-text {
+        @apply text-red-700 dark:text-red-400;
+    }
+    
+    .loading-spinner {
+        @apply inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500;
+    }
+    
+    /* Character Container */
+    .character-container {
+        @apply flex overflow-x-auto gap-4 pb-4;
+    }
+    
+    .character-card {
+        @apply bg-gray-100 dark:bg-gray-700 rounded-lg p-4 transition-all duration-200 hover:transform hover:-translate-y-1 hover:shadow-md;
+    }
+}
+
+/* Disable double-tap zoom on mobile */
+* {
+    touch-action: manipulation;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Character container scrolling */
+#traditional-container,
+#simplified-container {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f1f1;
+}
+
+/* Character cards hover effect */
+#traditional-container > div:hover,
+#simplified-container > div:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+/* Dark mode character backgrounds */
+.dark #traditional-container > div,
+.dark #simplified-container > div {
+    background-color: rgb(55 65 81);
+}
+
+.dark #traditional-container > div:hover,
+.dark #simplified-container > div:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Suggestions dropdown animation */
+#suggestions {
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Loading spinner enhancement */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Tab transitions */
+#chineseTab,
+#polishTab {
+    position: relative;
+    overflow: hidden;
+}
+
+#chineseTab::before,
+#polishTab::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+#chineseTab:active::before,
+#polishTab:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Polish word details animation */
+#wordDetails > div {
+    animation: fadeInUp 0.3s ease-out;
+    animation-fill-mode: both;
+}
+
+#wordDetails > div:nth-child(1) {
+    animation-delay: 0s;
+}
+
+#wordDetails > div:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+#wordDetails > div:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+#wordDetails > div:nth-child(4) {
+    animation-delay: 0.3s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Grammar table styling */
+#grammarTable table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#grammarTable thead th:first-child {
+    border-top-left-radius: 0.5rem;
+}
+
+#grammarTable thead th:last-child {
+    border-top-right-radius: 0.5rem;
+}
+
+#grammarTable tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 0.5rem;
+}
+
+#grammarTable tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 0.5rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    #chineseTab,
+    #polishTab {
+        padding-left: 1rem;
+        padding-right: 1rem;
+        font-size: 0.875rem;
+    }
+    
+    #traditional-container > div,
+    #simplified-container > div {
+        min-width: 200px;
+    }
+}
+
+/* Print styles */
+@media print {
+    nav {
+        display: none;
+    }
+    
+    #chineseSection,
+    #polishSection {
+        page-break-inside: avoid;
+    }
+    
+    .bg-gray-50 {
+        background-color: white;
+    }
+    
+    .shadow-md,
+    .shadow-lg {
+        box-shadow: none;
+        border: 1px solid #e5e7eb;
+    }
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+input:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Smooth section transitions */
+#chineseSection,
+#polishSection {
+    transition: opacity 0.3s ease;
+}
+
+#chineseSection.hidden,
+#polishSection.hidden {
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+}
+
+/* Character stroke animation buttons */
+#traditional-container button,
+#simplified-container button {
+    white-space: nowrap;
+}
+
+/* Error state styling */
+#errorState {
+    animation: shake 0.5s ease-out;
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-2px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(2px);
+    }
+}

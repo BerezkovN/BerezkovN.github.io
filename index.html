@@ -1,150 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Learning Helper</title>
+    
+    <!-- Compiled Tailwind CSS -->
+    <link rel="stylesheet" href="dist/output.css">
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <h1 class="heading-primary">Language Learning Hub</h1>
+                <div class="flex items-center space-x-4">
+                    <button id="chineseTab" class="tab tab-active">
+                        中文 Chinese
+                    </button>
+                    <button id="polishTab" class="tab tab-inactive">
+                        Polski Polish
+                    </button>
+                    <button id="themeToggle" class="btn-icon" aria-label="Toggle theme">
+                        <svg id="sunIcon" class="icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                        <svg id="moonIcon" class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Chinese Section -->
+    <section id="chineseSection" class="container-section">
+        <div class="max-width-wrapper">
+            <div class="card mb-6">
+                <h2 class="heading-secondary mb-4">Chinese Character Practice</h2>
+                <div class="flex gap-4 items-end">
+                    <div class="flex-1">
+                        <label for="hanziInput" class="label">
+                            Enter Chinese Characters:
+                        </label>
+                        <input 
+                            type="text" 
+                            id="hanziInput" 
+                            placeholder="你好" 
+                            class="input-field"
+                        >
+                    </div>
+                    <button 
+                        id="generateButton" 
+                        class="btn-primary"
+                    >
+                        Generate
+                    </button>
+                </div>
+            </div>
 
+            <!-- Traditional Characters -->
+            <div class="card mb-6">
+                <h3 class="heading-tertiary mb-4">繁體 Traditional</h3>
+                <div id="traditional-container" class="character-container"></div>
+            </div>
 
-請輸入字符:<p>
-<input type="text" id="hanzi" placeholder="你好" onkeydown="main()">
-<button type="button" id="generateButton">Generate</button>
+            <!-- Simplified Characters -->
+            <div class="card">
+                <h3 class="heading-tertiary mb-4">简体 Simplified</h3>
+                <div id="simplified-container" class="character-container"></div>
+            </div>
+        </div>
+    </section>
 
-<h1>繁體: </h1>
-<div id="traditional-container" class="scrolling-wrapper-flexbox"></div>
-<h1>简体: </h1>
-<div id="simplified-container" class="scrolling-wrapper-flexbox"></div>
+    <!-- Polish Section -->
+    <section id="polishSection" class="container-section hidden">
+        <div class="max-width-wrapper-md">
+            <!-- Search Box -->
+            <div class="card mb-6">
+                <h2 class="heading-secondary mb-4">Polish Dictionary</h2>
+                <div class="relative">
+                    <div class="flex gap-4">
+                        <div class="flex-1 relative">
+                            <input 
+                                type="text" 
+                                id="polishSearchInput" 
+                                placeholder="Search Polish words..." 
+                                class="input-field"
+                            >
+                            <!-- Suggestions dropdown -->
+                            <div id="suggestions" class="dropdown hidden">
+                            </div>
+                        </div>
+                        <button 
+                            id="searchButton" 
+                            class="btn-primary"
+                        >
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Word Details -->
+            <div id="wordDetails" class="hidden">
+                <!-- Polish Explanation -->
+                <div class="card mb-6">
+                    <h3 class="heading-tertiary mb-3">Polish Explanation</h3>
+                    <div id="polishExplanation" class="text-primary"></div>
+                </div>
 
+                <!-- English Translation -->
+                <div class="card mb-6">
+                    <h3 class="heading-tertiary mb-3">English Translation</h3>
+                    <div id="englishTranslation" class="text-primary"></div>
+                </div>
 
-<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
+                <!-- Grammar Table -->
+                <div class="card mb-6">
+                    <h3 class="heading-tertiary mb-3">Grammar Declension</h3>
+                    <div id="grammarTable" class="overflow-x-auto"></div>
+                </div>
 
-<script>
+                <!-- Examples -->
+                <div class="card">
+                    <h3 class="heading-tertiary mb-3">Examples</h3>
+                    <div id="examplesList" class="space-y-3"></div>
+                </div>
+            </div>
 
-    async function getCharacterStrokeCount(hanziChar) {
-        let unsupportedChar = false
-        const charData = await HanziWriter.loadCharacterData(hanziChar).catch((error) => {
-            unsupportedChar = true
-        });
-        if (unsupportedChar) {
-            return -1
-        }
-        else {
-            return charData.strokes.length;
-        }
-    }
+            <!-- Loading State -->
+            <div id="loadingState" class="hidden">
+                <div class="card text-center">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-4 text-secondary">Loading word details...</p>
+                </div>
+            </div>
 
-    function createElementFromHTML(htmlString) {
-        var div = document.createElement('div');
-        div.innerHTML = htmlString.trim();
+            <!-- Error State -->
+            <div id="errorState" class="hidden">
+                <div class="error-box">
+                    <p class="error-text" id="errorMessage"></p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        // Change this to div.childNodes to support multiple top-level nodes.
-        return div.firstChild;
-    }
-
-    function createBackground(hanziDivID) {
-        return createElementFromHTML(
-`
-<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" id="${hanziDivID}">
-    <line x1="0" y1="0" x2="200" y2="0" stroke="#DDD" />
-    <line x1="0" y1="0" x2="0" y2="200" stroke="#DDD" />
-    <line x1="0" y1="200" x2="200" y2="200" stroke="#DDD" />
-    <line x1="200" y1="0" x2="200" y2="200" stroke="#DDD" />
-
-    <line x1="0" y1="0" x2="200" y2="200" stroke="#DDD" />
-    <line x1="200" y1="0" x2="0" y2="200" stroke="#DDD" />
-    <line x1="100" y1="0" x2="100" y2="200" stroke="#DDD" />
-    <line x1="0" y1="100" x2="200" y2="100" stroke="#DDD" />
-</svg>
-`
-        )
-    }
-
-    async function generateHanziRow(containerName, hanziString) {
-
-        container = document.getElementById(containerName);
-        container.innerHTML = '';
-
-        strokeCounterArray = [];
-        for (let ind = 0; ind < hanziString.length; ind++) {
-
-            const strokeCount = await getCharacterStrokeCount(hanziString[ind])
-            if (strokeCount == -1) {
-
-                const padding = document.createElement("div")
-                padding.style.padding = "0px 3px";
-                container.appendChild(padding)
-
-                continue
-            }
-            strokeCounterArray.push(0)
-
-            const hanziDivID = containerName + "hanzi-" + ind
-            const hanziDiv = document.createElement("div")
-            container.appendChild(hanziDiv)
-
-            const backgroundElement = createBackground(hanziDivID)
-            hanziDiv.appendChild(backgroundElement)            
-
-            const writer = HanziWriter.create(hanziDivID, hanziString[ind], {
-                width: 200,
-                height: 200,
-                showCharacter: false,
-                strokeAnimationSpeed: 4,
-                padding: 5
-            });  
-
-            
-            const strokeCounterInd = ind;
-            const leftButton = document.createElement("button");
-            leftButton.textContent = "Next stroke"
-            leftButton.addEventListener('click', function() {
-
-                if (strokeCounterArray[strokeCounterInd] >= strokeCount) {
-                    writer.hideCharacter()
-                    strokeCounterArray[strokeCounterInd] = 0
-                }
-                else {
-                    writer.animateStroke(strokeCounterArray[strokeCounterInd])
-                    strokeCounterArray[strokeCounterInd]++
-                }
-                
-            });
-            hanziDiv.appendChild(document.createElement("br"))
-            hanziDiv.appendChild(leftButton)       
-        }
-    }
-
-    async function main() {
-
-        hanzi = document.getElementById("hanzi").value;
-
-        const t2sConverter = OpenCC.Converter({ from: 'tw', to: 'cn' });
-        const s2tConverter = OpenCC.Converter({ from: 'cn', to: 'tw' });
-
-        await generateHanziRow("traditional-container", s2tConverter(hanzi));
-        await generateHanziRow("simplified-container", t2sConverter(hanzi));
-    }
-
-    const generateButton = document.getElementById("generateButton");
-    generateButton.addEventListener('click', function() {
-        main()
-    });	
-
-</script>
-
-
-
-
-<style>
-    .scrolling-wrapper-flexbox {
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-
-        .card {
-            flex: 0 0 auto;
-        }
-    }
-	
-	* {
-		touch-action: manipulation;
-	}
-</style>
+    <!-- JavaScript Modules -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
