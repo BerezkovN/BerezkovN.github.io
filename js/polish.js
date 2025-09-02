@@ -220,6 +220,21 @@ export class PolishModule {
         return table;
     }
 
+    makeWordsClickable(text) {
+        // Split text into words and non-words (spaces, punctuation, etc.)
+        // Polish word characters include letters with diacritics
+        const parts = text.split(/(\b[\wąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+\b)/gi);
+        
+        return parts.map(part => {
+            // Check if this part is a word (contains letters)
+            if (/^[\wąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+$/i.test(part) && part.length > 1) {
+                // Make it clickable
+                return `<span class="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline" onclick="window.searchPolishWord('${part}')">${part}</span>`;
+            }
+            return part;
+        }).join('');
+    }
+
     displayWordDetails(wordData) {
         this.hideLoading();
         this.hideError();
@@ -229,7 +244,15 @@ export class PolishModule {
         if (wordData.polishExplanation) {
             // Display as seamless text without list formatting
             const meanings = wordData.polishExplanation.split('\n').filter(line => line.trim());
-            polishExplanationEl.innerHTML = meanings.join('<br>');
+            // Make words clickable but preserve existing clickable spans
+            const clickableMeanings = meanings.map(meaning => {
+                // Check if the line already contains clickable elements (from wikitext parsing)
+                if (meaning.includes('onclick="window.searchPolishWord')) {
+                    return meaning; // Keep existing clickable elements as-is
+                }
+                return this.makeWordsClickable(meaning);
+            });
+            polishExplanationEl.innerHTML = clickableMeanings.join('<br>');
         } else {
             polishExplanationEl.innerHTML = '<span class="text-secondary">Brak definicji</span>';
         }
@@ -273,15 +296,25 @@ export class PolishModule {
                 exampleDiv.className = 'border-l-4 border-blue-500 pl-4 py-2';
                 
                 if (typeof example === 'object' && example.polish) {
-                    const polishText = example.polish;
+                    let polishText = example.polish;
                     const englishText = example.english || '';
+                    
+                    // Make Polish example words clickable if no existing clickable elements
+                    if (!polishText.includes('onclick="window.searchPolishWord')) {
+                        polishText = this.makeWordsClickable(polishText);
+                    }
                     
                     exampleDiv.innerHTML = `
                         <p class="text-primary mb-1">${polishText}</p>
                         ${englishText ? `<p class="text-secondary text-sm italic">${englishText}</p>` : ''}
                     `;
                 } else if (typeof example === 'string') {
-                    exampleDiv.innerHTML = `<p class="text-primary">${example}</p>`;
+                    // Make words clickable if no existing clickable elements
+                    let clickableExample = example;
+                    if (!example.includes('onclick="window.searchPolishWord')) {
+                        clickableExample = this.makeWordsClickable(example);
+                    }
+                    exampleDiv.innerHTML = `<p class="text-primary">${clickableExample}</p>`;
                 }
                 
                 examplesListEl.appendChild(exampleDiv);

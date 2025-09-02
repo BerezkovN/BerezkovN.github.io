@@ -473,12 +473,12 @@ export class WiktionaryAPI {
             const linkContent = result.substring(start + 2, end);
             if (linkContent.includes('|')) {
                 const [word, display] = linkContent.split('|', 2);
-                const link = `<a href="#" onclick="window.searchPolishWord('${word.replace(/'/g, "\\'")}'); return false;" class="text-blue-600 hover:text-blue-800 underline cursor-pointer">${display}</a>`;
+                const link = `<span onclick="window.searchPolishWord('${word.replace(/'/g, "\\'")}'); return false;" class="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline">${display}</span>`;
                 result = result.substring(0, start) + link + result.substring(end + 2);
             } else {
                 // Handle as simple [[word]] case
                 const word = linkContent;
-                const link = `<a href="#" onclick="window.searchPolishWord('${word.replace(/'/g, "\\'")}'); return false;" class="text-blue-600 hover:text-blue-800 underline cursor-pointer">${word}</a>`;
+                const link = `<span onclick="window.searchPolishWord('${word.replace(/'/g, "\\'")}'); return false;" class="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline">${word}</span>`;
                 result = result.substring(0, start) + link + result.substring(end + 2);
             }
         }
@@ -491,7 +491,7 @@ export class WiktionaryAPI {
             
             const word = result.substring(start + 2, end);
             if (!word.includes('|')) { // Make sure it's not a complex link we missed
-                const link = `<a href="#" onclick="window.searchPolishWord('${word.replace(/'/g, "\\'")}'); return false;" class="text-blue-600 hover:text-blue-800 underline cursor-pointer">${word}</a>`;
+                const link = `<span onclick="window.searchPolishWord('${word.replace(/'/g, "\\'")}'); return false;" class="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline">${word}</span>`;
                 result = result.substring(0, start) + link + result.substring(end + 2);
             } else {
                 break; // Avoid infinite loop
