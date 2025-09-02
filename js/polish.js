@@ -7,7 +7,6 @@ export class PolishModule {
         this.loadingState = null;
         this.errorState = null;
         this.currentSuggestions = [];
-        this.debounceTimer = null;
         
         // History navigation
         this.history = [];
@@ -117,17 +116,15 @@ export class PolishModule {
             return;
         }
 
-        clearTimeout(this.debounceTimer);
-        this.debounceTimer = setTimeout(async () => {
-            try {
-                const suggestions = await this.fetchSuggestions(value);
-                this.currentSuggestions = suggestions;
-                this.showSuggestions(suggestions);
-            } catch (error) {
-                console.error('Error fetching suggestions:', error);
-                this.hideSuggestions();
-            }
-        }, 300);
+        // Fetch suggestions immediately without debounce
+        try {
+            const suggestions = await this.fetchSuggestions(value);
+            this.currentSuggestions = suggestions;
+            this.showSuggestions(suggestions);
+        } catch (error) {
+            console.error('Error fetching suggestions:', error);
+            this.hideSuggestions();
+        }
     }
 
     showLoading() {
