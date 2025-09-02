@@ -20,6 +20,7 @@ export class WiktionaryAPI {
 
             // Parse the wikitext content
             const parsedData = this.parseWikitext(pageContent, word);
+            parsedData.rawWikitext = pageContent; // Include raw wikitext
             
             // Cache the result
             this.cache.set(cacheKey, parsedData);
@@ -47,6 +48,7 @@ export class WiktionaryAPI {
 
             // Parse the English wikitext content
             const parsedData = this.parseEnglishWikitext(pageContent, word);
+            parsedData.rawWikitext = pageContent; // Include raw wikitext
             
             // Cache the result
             this.cache.set(cacheKey, parsedData);
@@ -347,24 +349,30 @@ export class WiktionaryAPI {
                 const cleanKey = key.trim();
                 const cleanValue = value.trim();
                 
-                if (cleanValue && cleanValue !== '{{odmiana-czasownik-polski' && !cleanValue.includes('}}')) {
-                    // Map common conjugation keys to readable forms
+                if (cleanValue && !cleanValue.includes('{{') && !cleanValue.includes('}}') && cleanValue !== '') {
+                    // Map Polish noun declension keys to readable forms
                     const keyMap = {
-                        'zrobię': 'ja',
-                        'zrobi': 'on/ona/ono',
-                        'zrobią': 'oni/one',
-                        'zrobiłem': 'ja (przeszły)',
-                        'zrobił': 'on (przeszły)',
-                        'zrobiła': 'ona (przeszła)',
-                        'zrobili': 'oni (przeszły)',
-                        'zrób': 'tryb rozkazujący',
-                        'zrobiwszy': 'imiesłów',
-                        'zrobiony': 'imiesłów bierny',
-                        'zrobienie': 'rzeczownik odczasownikowy'
+                        'Mianownik lp': 'Mianownik (lp)',
+                        'Dopełniacz lp': 'Dopełniacz (lp)',
+                        'Celownik lp': 'Celownik (lp)',
+                        'Biernik lp': 'Biernik (lp)',
+                        'Narzędnik lp': 'Narzędnik (lp)',
+                        'Miejscownik lp': 'Miejscownik (lp)',
+                        'Wołacz lp': 'Wołacz (lp)',
+                        'Mianownik lm': 'Mianownik (lm)',
+                        'Dopełniacz lm': 'Dopełniacz (lm)',
+                        'Celownik lm': 'Celownik (lm)',
+                        'Biernik lm': 'Biernik (lm)',
+                        'Narzędnik lm': 'Narzędnik (lm)',
+                        'Miejscownik lm': 'Miejscownik (lm)',
+                        'Wołacz lm': 'Wołacz (lm)',
+                        'Forma ndepr': 'Forma niedeprecjonalna'
                     };
                     
                     const displayKey = keyMap[cleanKey] || cleanKey;
-                    conjugations[displayKey] = cleanValue;
+                    if (keyMap[cleanKey]) { // Only add recognized declension forms
+                        conjugations[displayKey] = cleanValue;
+                    }
                 }
             }
         }
@@ -374,13 +382,14 @@ export class WiktionaryAPI {
         const examples = [];
         
         for (const line of lines) {
-            if (line.startsWith(': (') && line.includes(')')) {
-                const numberEnd = line.indexOf(')');
-                const restOfLine = line.substring(numberEnd + 1).trim();
+            // Look for lines starting with ': (number) '' (italic text) ''
+            if (line.startsWith(': (') && line.includes("''") && line.includes("''")) {
+                // Find the text between the double single quotes
+                const firstQuoteIndex = line.indexOf("''");
+                const lastQuoteIndex = line.lastIndexOf("''");
                 
-                // Look for text in single quotes (italic)
-                if (restOfLine.startsWith("''") && restOfLine.endsWith("''")) {
-                    const example = restOfLine.substring(2, restOfLine.length - 2);
+                if (firstQuoteIndex !== -1 && lastQuoteIndex !== -1 && firstQuoteIndex !== lastQuoteIndex) {
+                    const example = line.substring(firstQuoteIndex + 2, lastQuoteIndex);
                     const exampleWithLinks = this.processTemplatesAndLinks(example);
                     examples.push({
                         polish: exampleWithLinks,

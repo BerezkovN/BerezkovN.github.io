@@ -293,6 +293,22 @@ export class PolishModule {
             examplesListEl.innerHTML = '<p class="text-secondary">Brak przykładów</p>';
         }
 
+        // Raw Wikitext sections
+        const polishWikitextEl = document.getElementById('polishWikitextText');
+        const englishWikitextEl = document.getElementById('englishWikitextText');
+        
+        if (wordData.polishWikitext) {
+            polishWikitextEl.textContent = wordData.polishWikitext;
+        } else {
+            polishWikitextEl.textContent = 'Brak polskiego wikitekstu';
+        }
+        
+        if (wordData.englishWikitext) {
+            englishWikitextEl.textContent = wordData.englishWikitext;
+        } else {
+            englishWikitextEl.textContent = 'No English wikitext available';
+        }
+
         this.wordDetailsContainer.classList.remove('hidden');
     }
 
@@ -449,6 +465,43 @@ export class PolishModule {
             this.forwardButton.addEventListener('click', () => {
                 this.goForward();
             });
+        }
+
+        // Set up dropdown toggle listeners
+        this.setupDropdownToggles();
+    }
+
+    setupDropdownToggles() {
+        const polishToggle = document.getElementById('polishWikitextToggle');
+        const polishContent = document.getElementById('polishWikitextContent');
+        const polishArrow = document.getElementById('polishWikitextArrow');
+
+        const englishToggle = document.getElementById('englishWikitextToggle');
+        const englishContent = document.getElementById('englishWikitextContent');
+        const englishArrow = document.getElementById('englishWikitextArrow');
+
+        if (polishToggle && polishContent && polishArrow) {
+            polishToggle.addEventListener('click', () => {
+                this.toggleDropdown(polishContent, polishArrow);
+            });
+        }
+
+        if (englishToggle && englishContent && englishArrow) {
+            englishToggle.addEventListener('click', () => {
+                this.toggleDropdown(englishContent, englishArrow);
+            });
+        }
+    }
+
+    toggleDropdown(content, arrow) {
+        const isHidden = content.classList.contains('hidden');
+        
+        if (isHidden) {
+            content.classList.remove('hidden');
+            arrow.style.transform = 'rotate(180deg)';
+        } else {
+            content.classList.add('hidden');
+            arrow.style.transform = 'rotate(0deg)';
         }
     }
 }

@@ -151,7 +151,9 @@ class LanguageLearningApp {
                     grammarTable: {},
                     examples: [],
                     pronunciation: polishData.pronunciation || '',
-                    etymology: polishData.etymology || ''
+                    etymology: polishData.etymology || '',
+                    polishWikitext: polishData.rawWikitext || '',
+                    englishWikitext: englishData.rawWikitext || ''
                 };
 
                 // Format Polish meanings
